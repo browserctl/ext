@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      width: 280px;
+      padding: 16px;
+      background: #f5f5f5;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .header img {
+      width: 32px;
+      height: 32px;
+    }
+
+    .header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: white;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ccc;
+    }
+
+    .status-dot.connected { background: #4caf50; }
+    .status-dot.disconnected { background: #f44336; }
+    .status-dot.connecting { background: #ff9800; }
+
+    .status-text {
+      flex: 1;
+      color: #666;
+    }
+
+    .form {
+      margin-bottom: 12px;
+    }
+
+    .form-group {
+      margin-bottom: 8px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #4caf50;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-connect {
+      background: #4caf50;
+      color: white;
+    }
+
+    .btn-connect:hover {
+      background: #43a047;
+    }
+
+    .btn-disconnect {
+      background: #f44336;
+      color: white;
+    }
+
+    .btn-disconnect:hover {
+      background: #e53935;
+    }
+
+    .info {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid #ddd;
+      font-size: 11px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="logo.png" alt="Logo">
+    <h1>Chrome Use</h1>
+  </div>
+
+  <div class="status">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">Disconnected</span>
+  </div>
+
+  <div class="form">
+    <div class="form-group">
+      <label>Host</label>
+      <input type="text" id="host" value="localhost" placeholder="localhost">
+    </div>
+    <div class="form-group">
+      <label>Port</label>
+      <input type="number" id="port" value="9222" placeholder="9222">
+    </div>
+  </div>
+
+  <div class="buttons">
+    <button class="btn btn-connect" id="connectBtn">Connect</button>
+    <button class="btn btn-disconnect" id="disconnectBtn">Disconnect</button>
+    <button class="btn btn-connect" id="forceConnectBtn" style="font-size:11px;padding:6px;">Force Reconnect</button>
+  </div>
+
+  <div class="info">
+    This extension connects to a local Python server for browser automation.<br>
+    <a href="#" id="swLogsLink" style="color:#999;">View Service Worker Logs →</a>
+  </div>
+  <div id="debug" style="margin-top:8px;font-size:11px;color:#999;max-height:80px;overflow-y:auto;"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

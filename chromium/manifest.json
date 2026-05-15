@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoVYOhFAxhploHyboz4/yPA952xWKrSuGYpv3gjV6zNx+Eg6bWk3DW+EIBD0yn/qgUcIWCQeiklozCCAnqeKwzqQJC2hZMmy39RjfU761iFOtDGPmc+KfoT2yOVuk3EsCWEjhbMlTkjFczgZnxkHUhQ7fBiaMq8dzuLZx8ipO7uATkvM2KMa17Sib4No9EYOH7t3WfN3ASukbNeySQyH8WPZ3kZGqiOueavvO3DDQoae4R8NHAprzlHFCuBbJW1tceBLwv9GxFq1I2+bGoz7dbvYWK3qjgZ+Nqu7IwLoFeUD6qqHfL6na768UJq2P/yj+Rep5+pey7Qcpj6pPtNH82QIDAQAB",
+  "name": "Chrome Use",
+  "version": "0.2.1",
+  "description": "Browser automation for OpenClaw Skill",
+  "permissions": [
+    "tabs",
+    "debugger",
+    "scripting",
+    "alarms"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Chrome Use",
+    "default_popup": "popup.html"
+  }
+}
