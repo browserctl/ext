@@ -1,4 +1,4 @@
-// Chrome Use - Background Script
+// Browserctl - Background Script
 // Uses chrome.debugger API to control Chrome browser
 // Communication: Chrome Extension ↔ WebSocket ↔ Node.js
 
@@ -20,17 +20,17 @@ const EXTENSION_PATH = '/extension';
 async function attachToTab(tabId) {
   // If already attached, return immediately
   if (debuggerSessions.has(tabId)) {
-    console.log(`[Chrome Use] Already attached to tab ${tabId}`);
+    console.log(`[Browserctl] Already attached to tab ${tabId}`);
     return true;
   }
   
   // If attach is in progress, wait for it
   if (attachLocks.has(tabId)) {
-    console.log(`[Chrome Use] Waiting for pending attach on tab ${tabId}`);
+    console.log(`[Browserctl] Waiting for pending attach on tab ${tabId}`);
     return attachLocks.get(tabId);
   }
   
-  console.log(`[Chrome Use] Attempting to attach to tab ${tabId}...`);
+  console.log(`[Browserctl] Attempting to attach to tab ${tabId}...`);
   
   // Create attach promise
   const attachPromise = (async () => {
@@ -56,7 +56,7 @@ async function doAttach(tabId) {
       await tryAttachOnce(tabId, attempt);
       return true; // Success
     } catch (err) {
-      console.log(`[Chrome Use] Attach attempt ${attempt}/${maxRetries} failed: ${err.message}`);
+      console.log(`[Browserctl] Attach attempt ${attempt}/${maxRetries} failed: ${err.message}`);
       if (attempt === maxRetries) {
         // Last attempt - throw with helpful message
         const helpfulError = new Error(`Failed to attach debugger after ${maxRetries} attempts. Another extension or DevTools may be using this tab. Try closing DevTools or disabling debugger extensions. Original error: ${err.message}`);
@@ -73,11 +73,11 @@ async function doAttach(tabId) {
 // Single attach attempt with graceful detach-first
 async function tryAttachOnce(tabId, attemptNum) {
   return new Promise((resolve, reject) => {
-    console.log(`[Chrome Use] Attempt ${attemptNum}: Detaching tab ${tabId} (if attached)...`);
+    console.log(`[Browserctl] Attempt ${attemptNum}: Detaching tab ${tabId} (if attached)...`);
 
     chrome.debugger.detach({tabId}, () => {
       setTimeout(() => {
-        console.log(`[Chrome Use] Attempt ${attemptNum}: Attaching tab ${tabId}...`);
+        console.log(`[Browserctl] Attempt ${attemptNum}: Attaching tab ${tabId}...`);
 
         chrome.debugger.attach({tabId}, DEBUGGER_VERSION, () => {
           if (chrome.runtime.lastError) {
@@ -90,7 +90,7 @@ async function tryAttachOnce(tabId, attemptNum) {
             return;
           }
           debuggerSessions.set(tabId, { attached: true, attempt: attemptNum });
-          console.log(`[Chrome Use] Attempt ${attemptNum}: Successfully attached to tab ${tabId}`);
+          console.log(`[Browserctl] Attempt ${attemptNum}: Successfully attached to tab ${tabId}`);
           
           if (!cdpEventListeners.has(tabId)) {
             cdpEventListeners.set(tabId, new Set());
@@ -98,9 +98,9 @@ async function tryAttachOnce(tabId, attemptNum) {
           
           chrome.debugger.sendCommand({tabId}, "Network.enable", {}, (result, err) => {
             if (err) {
-              console.error("[Chrome Use] Network.enable error:", err);
+              console.error("[Browserctl] Network.enable error:", err);
             } else {
-              console.log("[Chrome Use] Network domain enabled for tab", tabId);
+              console.log("[Browserctl] Network domain enabled for tab", tabId);
             }
           });
           
@@ -151,20 +151,20 @@ function connect(host, port) {
   serverPort = port || DEFAULT_PORT;
 
   if (ws && ws.readyState === WebSocket.OPEN) {
-    console.log('[Chrome Use] Closing existing WS connection before reconnect');
+    console.log('[Browserctl] Closing existing WS connection before reconnect');
     ws.close();
   }
 
   const url = `ws://${serverHost}:${serverPort}${EXTENSION_PATH}`;
 
-console.log(`[Chrome Use] Connecting to ${url} (host=${serverHost}, port=${serverPort})`);
+console.log(`[Browserctl] Connecting to ${url} (host=${serverHost}, port=${serverPort})`);
   statusUpdate(`Connecting to ${url}...`);
 
   try {
     ws = new WebSocket(url);
 
     ws.onopen = () => {
-      console.log("[Chrome Use] Connected");
+      console.log("[Browserctl] Connected");
       statusUpdate("Connected");
       
       // MV3 Service Worker: getCurrent() may return undefined
@@ -173,14 +173,14 @@ console.log(`[Chrome Use] Connecting to ${url} (host=${serverHost}, port=${serve
         if (windows && windows.length > 0) {
           // Register all normal browser windows
           for (const win of windows) {
-            console.log(`[Chrome Use] Registering window: ${win.id}`);
+            console.log(`[Browserctl] Registering window: ${win.id}`);
             send({ type: "register", role: "extension", api: "debugger", windowId: win.id });
           }
         } else {
           // Fallback: use last focused window
           chrome.windows.getLastFocused((win) => {
             if (win) {
-              console.log(`[Chrome Use] Registering last focused window: ${win.id}`);
+              console.log(`[Browserctl] Registering last focused window: ${win.id}`);
               send({ type: "register", role: "extension", api: "debugger", windowId: win.id });
             }
           });
@@ -202,22 +202,22 @@ console.log(`[Chrome Use] Connecting to ${url} (host=${serverHost}, port=${serve
         const msg = JSON.parse(event.data);
         handleMessage(msg);
       } catch (e) {
-        console.error('[Chrome Use] Failed to parse message:', e);
+        console.error('[Browserctl] Failed to parse message:', e);
       }
     };
 
     ws.onclose = () => {
-      console.log('[Chrome Use] Disconnected');
+      console.log('[Browserctl] Disconnected');
       statusUpdate('Disconnected');
       scheduleReconnect();
     };
 
     ws.onerror = (error) => {
-      console.error('[Chrome Use] WebSocket error:', error);
+      console.error('[Browserctl] WebSocket error:', error);
       statusUpdate('Error');
     };
   } catch (e) {
-    console.error('[Chrome Use] Failed to connect:', e);
+    console.error('[Browserctl] Failed to connect:', e);
     statusUpdate('Failed to connect');
     scheduleReconnect();
   }
@@ -236,7 +236,7 @@ function scheduleReconnect() {
     if (ws && ws.readyState === WebSocket.OPEN) {
       return;
     }
-    console.log('[Chrome Use] Attempting to reconnect (keeping debugger sessions intact)...');
+    console.log('[Browserctl] Attempting to reconnect (keeping debugger sessions intact)...');
     statusUpdate('Reconnecting...');
     // NOTE: intentionally do NOT call cleanupAndConnect() here.
     // Detaching all tabs on every WS reconnect would break active CDP sessions.
@@ -248,7 +248,7 @@ function scheduleReconnect() {
 // Send message to Python
 function send(message) {
   if (!ws || ws.readyState !== WebSocket.OPEN) {
-    console.warn('[Chrome Use] Not connected, message dropped:', message.type);
+    console.warn('[Browserctl] Not connected, message dropped:', message.type);
     // Return resolved promise to avoid unhandled rejection errors
     // Caller should handle the case where message may not be delivered
     return Promise.resolve();
@@ -265,7 +265,7 @@ function send(message) {
 
 // Handle incoming messages from Python
 function handleMessage(msg) {
-  console.log('[Chrome Use] Received:', msg.type, msg);
+  console.log('[Browserctl] Received:', msg.type, msg);
 
   // Handle commands from Python
   switch (msg.type) {
@@ -337,7 +337,7 @@ function handleMessage(msg) {
       break;
 
     default:
-      console.warn('[Chrome Use] Unknown message type:', msg.type);
+      console.warn('[Browserctl] Unknown message type:', msg.type);
   }
 }
 
@@ -629,7 +629,7 @@ function statusUpdate(text) {
         }
       });
     } catch (e) {
-      console.error('[Chrome Use] setIcon failed:', e.message || e);
+      console.error('[Browserctl] setIcon failed:', e.message || e);
     }
   }, 100);
 
@@ -650,7 +650,7 @@ async function handleCdpCommand(msg) {
     // Special handling for Page.addScriptToEvaluateOnNewDocument
     if (method === 'Page.addScriptToEvaluateOnNewDocument') {
       // Use chrome.scripting.registerContentScript for persistent injection
-      const scriptId = 'chrome-use-inject-' + Date.now();
+      const scriptId = 'browserctl-inject-' + Date.now();
       await chrome.scripting.registerContentScripts([{
         id: scriptId,
         allFrames: true,
@@ -747,7 +747,7 @@ async function handleTabDetach(msg) {
 // 2. Web Pages (tabs) - CDP Runtime.consoleAPICalled event
 //
 // Both are forwarded to cdp-server and written to file:
-//   ~/logs/chrome-use/YYYY-MM-DD.log
+//   ~/logs/browserctl/YYYY-MM-DD.log
 //
 // Format: one JSON per line
 //   {"timestamp":1234567890,"level":"log","message":"...","source":"worker"}
@@ -796,7 +796,7 @@ let consoleCaptureTabs = new Set();
     sendConsole('warn', args);
   };
   
-  console.log('[Chrome Use] Console interception enabled (Service Worker)');
+  console.log('[Browserctl] Console interception enabled (Service Worker)');
 })();
 
 // Enable Runtime domain for a tab to capture console events
@@ -821,10 +821,10 @@ async function enableConsoleCapture(tabId) {
     });
     
     consoleCaptureTabs.add(tabId);
-    console.log(`[Chrome Use] Console capture enabled for tab ${tabId}`);
+    console.log(`[Browserctl] Console capture enabled for tab ${tabId}`);
     return true;
   } catch (err) {
-    console.warn(`[Chrome Use] Failed to enable console capture for tab ${tabId}:`, err.message);
+    console.warn(`[Browserctl] Failed to enable console capture for tab ${tabId}:`, err.message);
     return false;
   }
 }
@@ -840,9 +840,9 @@ async function enableConsoleCaptureForAllTabs() {
         await enableConsoleCapture(tab.id);
       }
     }
-    console.log(`[Chrome Use] Console capture enabled for ${consoleCaptureTabs.size} tabs`);
+    console.log(`[Browserctl] Console capture enabled for ${consoleCaptureTabs.size} tabs`);
   } catch (err) {
-    console.error('[Chrome Use] Failed to enable console capture for all tabs:', err.message);
+    console.error('[Browserctl] Failed to enable console capture for all tabs:', err.message);
   }
 }
 
@@ -1026,26 +1026,26 @@ async function sendTabsList() {
       type: 'tabs_list',
       tabs: tabInfo
     });
-    console.log('[Chrome Use] Sent tabs list:', tabInfo.length, 'tabs');
+    console.log('[Browserctl] Sent tabs list:', tabInfo.length, 'tabs');
   } catch (error) {
-    console.error('[Chrome Use] Failed to get tabs:', error);
+    console.error('[Browserctl] Failed to get tabs:', error);
   }
 }
 
 // Initialize connection when extension loads
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('[Chrome Use] Extension installed');
+  console.log('[Browserctl] Extension installed');
   cleanupAndConnect();
 });
 
 // Also connect when extension starts
 chrome.runtime.onStartup.addListener(() => {
-  console.log('[Chrome Use] Chrome startup, connecting...');
+  console.log('[Browserctl] Chrome startup, connecting...');
   cleanupAndConnect();
 });
 
 // Auto-connect when script is loaded
-console.log('[Chrome Use] Extension loading, connecting...');
+console.log('[Browserctl] Extension loading, connecting...');
 cleanupAndConnect();
 
 // ========================================
@@ -1054,37 +1054,37 @@ cleanupAndConnect();
 
 // Create an alarm to wake up the Service Worker every 20 seconds
 // This keeps the Service Worker alive and ensures reconnection
-const KEEP_ALIVE_ALARM = 'chrome-use-keepalive';
+const KEEP_ALIVE_ALARM = 'browserctl-keepalive';
 
 // Start the keep-alive alarm
 async function startKeepAlive() {
   try {
     const existing = await chrome.alarms.get(KEEP_ALIVE_ALARM);
-    console.log('[Chrome Use] Checking alarm, existing:', existing ? 'yes' : 'no');
+    console.log('[Browserctl] Checking alarm, existing:', existing ? 'yes' : 'no');
     if (!existing) {
       chrome.alarms.create(KEEP_ALIVE_ALARM, {
         delayInMinutes: 0.05,   // First trigger in 3 seconds
         periodInMinutes: 0.5    // Then every 30 seconds (minimum allowed)
       });
-      console.log('[Chrome Use] Keep-alive alarm created (30s period)');
+      console.log('[Browserctl] Keep-alive alarm created (30s period)');
     } else {
-      console.log('[Chrome Use] Keep-alive alarm already exists');
+      console.log('[Browserctl] Keep-alive alarm already exists');
     }
   } catch (e) {
-    console.error('[Chrome Use] Failed to start keep-alive:', e.message);
+    console.error('[Browserctl] Failed to start keep-alive:', e.message);
   }
 }
 
 // Handle alarm events
 chrome.alarms.onAlarm.addListener((alarm) => {
-  console.log('[Chrome Use] Alarm triggered:', alarm.name);
+  console.log('[Browserctl] Alarm triggered:', alarm.name);
   if (alarm.name === KEEP_ALIVE_ALARM) {
     // Check if WebSocket is connected, reconnect if not
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      console.log('[Chrome Use] Keep-alive: WS not connected (ws=' + (ws ? ws.readyState : 'null') + '), connecting...');
+      console.log('[Browserctl] Keep-alive: WS not connected (ws=' + (ws ? ws.readyState : 'null') + '), connecting...');
       connect(serverHost, serverPort);
     } else {
-      console.log('[Chrome Use] Keep-alive: WS connected, sending ping');
+      console.log('[Browserctl] Keep-alive: WS connected, sending ping');
       // Send a ping to keep connection alive
       send({ type: 'ping' }).catch(() => {});
     }
@@ -1100,7 +1100,7 @@ startKeepAlive().catch(console.error);
 async function cleanupAndConnect() {
   try {
     const tabs = await chrome.tabs.query({});
-    console.log(`[Chrome Use] Startup cleanup: found ${tabs.length} tabs`);
+    console.log(`[Browserctl] Startup cleanup: found ${tabs.length} tabs`);
 
     for (const tab of tabs) {
       await new Promise((resolve) => {
@@ -1109,7 +1109,7 @@ async function cleanupAndConnect() {
           // Only log genuine errors
           const error = chrome.runtime.lastError;
           if (error && !error.message.includes('not attached')) {
-            console.log(`[Chrome Use] Startup cleanup detach tab ${tab.id}: ${error.message}`);
+            console.log(`[Browserctl] Startup cleanup detach tab ${tab.id}: ${error.message}`);
           }
           debuggerSessions.delete(tab.id);
           resolve();
@@ -1119,9 +1119,9 @@ async function cleanupAndConnect() {
 
     debuggerSessions.clear();
     attachLocks.clear();
-    console.log('[Chrome Use] Startup cleanup complete, connecting...');
+    console.log('[Browserctl] Startup cleanup complete, connecting...');
   } catch (e) {
-    console.error('[Chrome Use] Startup cleanup failed:', e);
+    console.error('[Browserctl] Startup cleanup failed:', e);
   }
 
   // Connect after cleanup

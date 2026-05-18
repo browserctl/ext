@@ -1,4 +1,4 @@
-// Chrome Use - Popup Script
+// Browserctl - Popup Script
 
 const statusDot = document.getElementById('statusDot');
 const statusText = document.getElementById('statusText');
